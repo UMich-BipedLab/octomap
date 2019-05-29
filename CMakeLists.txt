@@ -1,6 +1,8 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.8)
 PROJECT( octomap-distribution )
 
+set(CMAKE_CXX_STANDARD 11)
+
 ENABLE_TESTING()  # enable CTest environment of subprojects
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)  # enables -fPIC in applicable compilers (required to avoid link errors in some cases)
 

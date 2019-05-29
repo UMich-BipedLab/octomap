@@ -25,6 +25,12 @@ if(BUILD_TESTING)
 
   ADD_EXECUTABLE(test_pruning test_pruning.cpp)
   TARGET_LINK_LIBRARIES(test_pruning octomap octomath)
+ 
+  ADD_EXECUTABLE(test_semantic_tree test_semantic_tree.cpp)
+  TARGET_LINK_LIBRARIES(test_semantic_tree octomap)
+  
+  ADD_EXECUTABLE(test_semantic_scan test_semantic_scan.cpp)
+  TARGET_LINK_LIBRARIES(test_semantic_scan octomap)
 
 
   # CTest tests below
@@ -46,4 +52,6 @@ if(BUILD_TESTING)
   ADD_TEST (NAME test_iterators     COMMAND test_iterators ${PROJECT_SOURCE_DIR}/share/data/geb079.bt)
   ADD_TEST (NAME test_mapcollection COMMAND test_mapcollection ${PROJECT_SOURCE_DIR}/share/data/mapcoll.txt)
   ADD_TEST (NAME test_color_tree    COMMAND test_color_tree)
+  ADD_TEST (NAME test_semantic_tree COMMAND test_semantic_tree)
+  ADD_TEST (NAME test_semantic_scan COMMAND test_semantic_scan)
 endif()

@@ -16,34 +16,78 @@ namespace octomap {
 	return s;
   }
 
-  SemanticOcTreeNode::Color SemanticOcTreeNode::getAverageChildColor() const {
-	int mr = 0;
-	int mg = 0;
-	int mb = 0;
-	int c = 0;
+  SemanticOcTreeNode::Color SemanticOcTreeNode::getAverageChildColor(const std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> & label2color) const {
+    if (label2color.size() == 0) {
+      int mr = 0;
+      int mg = 0;
+      int mb = 0;
+      int c = 0;
 
-    if (children != NULL){
-      for (int i=0; i<8; i++) {
-        SemanticOcTreeNode* child = static_cast<SemanticOcTreeNode*>(children[i]);
+      if (children != NULL){
+        for (int i=0; i<8; i++) {
+          SemanticOcTreeNode* child = static_cast<SemanticOcTreeNode*>(children[i]);
         
-        if (child != NULL && child->isColorSet()) {
-          mr += child->getColor().r;
-          mg += child->getColor().g;
-          mb += child->getColor().b;
-          ++c;
+          if (child != NULL && child->isColorSet()) {
+            mr += child->getColor().r;
+            mg += child->getColor().g;
+            mb += child->getColor().b;
+            ++c;
+          }
         }
       }
-    }
     
-    if (c > 0) {
-      mr /= c;
-      mg /= c;
-      mb /= c;
-      return Color((uint8_t) mr, (uint8_t) mg, (uint8_t) mb);
+      if (c > 0) {
+        mr /= c;
+        mg /= c;
+        mb /= c;
+        return Color((uint8_t) mr, (uint8_t) mg, (uint8_t) mb);
+      }
+      else { // no child had a color other than white
+        return Color(255, 255, 255);
+      }
+    } else {
+      // use provided color map
+      auto & distribution = semantics.label;
+      int max_prob_class = std::distance(distribution.begin(),
+                                         std::max_element(distribution.begin(), distribution.end()));
+
+      auto color_max = label2color.at(max_prob_class);
+      return Color(std::get<0>(color_max),
+                   std::get<1>(color_max),
+                   std::get<2>(color_max));
+
     }
-    else { // no child had a color other than white
-      return Color(255, 255, 255);
-    }
+  }
+ SemanticOcTreeNode::Color SemanticOcTreeNode::getAverageChildColor() const {
+
+   int mr = 0;
+   int mg = 0;
+   int mb = 0;
+   int c = 0;
+
+   if (children != NULL){
+     for (int i=0; i<8; i++) {
+       SemanticOcTreeNode* child = static_cast<SemanticOcTreeNode*>(children[i]);
+        
+       if (child != NULL && child->isColorSet()) {
+         mr += child->getColor().r;
+         mg += child->getColor().g;
+         mb += child->getColor().b;
+         ++c;
+       }
+     }
+   }
+    
+   if (c > 0) {
+     mr /= c;
+     mg /= c;
+     mb /= c;
+     return Color((uint8_t) mr, (uint8_t) mg, (uint8_t) mb);
+   }
+   else { // no child had a color other than white
+     return Color(255, 255, 255);
+   }
+
   }
 
   SemanticOcTreeNode::Semantics SemanticOcTreeNode::getAverageChildSemantics() const {
@@ -84,7 +128,12 @@ namespace octomap {
 	color = getAverageChildColor();
   }
 
-  void SemanticOcTreeNode::updateSemanticsChildren() {
+  void SemanticOcTreeNode::updateColorChildren(const std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> & label2color_map) {
+	color = getAverageChildColor(label2color_map);
+  }
+
+  
+  void SemanticOcTreeNode::updateSemanticsChildren(){
 	semantics = getAverageChildSemantics();
   }
 
@@ -103,6 +152,16 @@ namespace octomap {
     semanticOcTreeMemberInit.ensureLinking();
   };
 
+  SemanticOcTree::SemanticOcTree(double resolution,
+                                 const std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> & label2color_map)
+    : OccupancyOcTreeBase<SemanticOcTreeNode>(resolution) ,
+    label2color(label2color_map)
+  {
+    semanticOcTreeMemberInit.ensureLinking();
+    
+  };
+
+  
   void SemanticOcTree::averageNodeColor(SemanticOcTreeNode* n,
                                         uint8_t r,
                                         uint8_t g,
@@ -160,8 +219,11 @@ namespace octomap {
         }
       }
       node->updateOccupancyChildren();
-      node->updateColorChildren();
+      
       node->updateSemanticsChildren();
+      
+      node->updateColorChildren();
+
     }
   }
 

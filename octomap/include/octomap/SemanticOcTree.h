@@ -3,8 +3,11 @@
 
 
 #include <iostream>
+#include <unordered_map>
+#include <tuple> // for color map
 #include <octomap/OcTreeNode.h>
 #include <octomap/OccupancyOcTreeBase.h>
+
 
 namespace octomap {
   
@@ -75,10 +78,12 @@ namespace octomap {
     inline void resetSemanticsCount() { this->semantics.count = 1; }
 
     void updateColorChildren();
+    void updateColorChildren(const std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> & label2color_map);
     void updateSemanticsChildren();
     void normalizeSemantics();
 
     SemanticOcTreeNode::Color getAverageChildColor() const;
+    SemanticOcTreeNode::Color getAverageChildColor(const std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> & label2color_map) const;
     SemanticOcTreeNode::Semantics getAverageChildSemantics() const;
 
     // file I/O
@@ -97,6 +102,9 @@ namespace octomap {
   public:
     /// Default constructor, sets resolution of leafs
     SemanticOcTree(double resolution);
+    /// Default constructor, sets resolution of leafs
+    SemanticOcTree(double resolution, const std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> & label2color_map);
+    
 
     /// virtual constructor: creates a new object of same type
     /// (Covariant return type requires an up-to-date compiler)
@@ -137,6 +145,9 @@ namespace octomap {
     };
     /// static member to ensure static initialization (only once)
     static StaticMemberInitializer semanticOcTreeMemberInit;
+
+    // use provided color map or not
+    std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> label2color;
 
   };
 
