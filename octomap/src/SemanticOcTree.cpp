@@ -48,10 +48,15 @@ namespace octomap {
     } else {
       // use provided color map
       auto & distribution = semantics.label;
+      
+      if (distribution.size() == 0 ) {
+        return Color(255, 255, 255);
+      }
       int max_prob_class = std::distance(distribution.begin(),
                                          std::max_element(distribution.begin(), distribution.end()));
 
       auto color_max = label2color.at(max_prob_class);
+
       return Color(std::get<0>(color_max),
                    std::get<1>(color_max),
                    std::get<2>(color_max));
@@ -141,8 +146,15 @@ namespace octomap {
     float sum = 0;
     for (int i = 0; i < (int)semantics.label.size(); i++)
       sum += semantics.label[i];
-    for (int i = 0; i < (int)semantics.label.size(); i++)
-      semantics.label[i] = semantics.label[i]/sum;
+    if (sum > 0) {
+      for (int i = 0; i < (int)semantics.label.size(); i++)
+        semantics.label[i] = semantics.label[i]/sum;
+    } else {
+      for (int i = 0; i < (int)semantics.label.size(); i++)
+        semantics.label[i] = 1.0  / semantics.label.size();
+      
+    }
+    
   }
 
 
@@ -153,9 +165,11 @@ namespace octomap {
   };
 
   SemanticOcTree::SemanticOcTree(double resolution,
+                                 int num_classes,
                                  const std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> & label2color_map)
     : OccupancyOcTreeBase<SemanticOcTreeNode>(resolution) ,
-    label2color(label2color_map)
+    label2color(label2color_map),
+    num_class(num_classes)
   {
     semanticOcTreeMemberInit.ensureLinking();
     
@@ -182,18 +196,27 @@ namespace octomap {
     if (n != 0) {
       if (n->isSemanticsSet()) {
         SemanticOcTreeNode::Semantics prev_semantics = n->getSemantics();
-        if (prev_semantics.label.size() < label.size())
+        if (prev_semantics.label.size() < label.size()) {
             prev_semantics.label.resize(label.size());
-       
+            for (int i = 0; i < label.size(); i++)
+              prev_semantics.label[i] = 1.0 / label.size();
+            
+        }
+
+        //std::cout<<"averageNodeSemantics: # of labels is "<<n->getSemantics().label.size()<<", the first one is "<<n->getSemantics().label[0]<<std::endl;
+
+        
         //label[0] *= 0; // smaller weight for unlabeled data
         for (int i=0; i<(int)label.size(); i++) {
           prev_semantics.label[i] = (prev_semantics.label[i]*prev_semantics.count + label[i]);
           prev_semantics.label[i] = prev_semantics.label[i] / (prev_semantics.count + 1);
           //prev_semantics.label[i] = (prev_semantics.label[i] + label[i]) / 2;
         }
+        
         n->setSemantics(prev_semantics);
         n->normalizeSemantics();
         n->addSemanticsCount();
+
       }
       else {
         n->setSemantics(label);
@@ -201,6 +224,7 @@ namespace octomap {
         n->resetSemanticsCount();
       }
     }
+    //std::cout<<"averageNodeSemantics: # of labels is "<<n->getSemantics().label.size()<<", the first one is "<<n->getSemantics().label[0]<<std::endl;
   }
 
   void SemanticOcTree::updateInnerOccupancy() {
@@ -221,10 +245,15 @@ namespace octomap {
       node->updateOccupancyChildren();
       
       node->updateSemanticsChildren();
-      
-      node->updateColorChildren();
+
+      if (label2color.size())
+        node->updateColorChildren(label2color);
+      else
+        node->updateColorChildren();
 
     }
+    else
+      node->updateColorChildren(label2color);
   }
 
   std::ostream& operator<<(std::ostream& out,

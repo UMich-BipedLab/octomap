@@ -36,6 +36,13 @@ namespace octomap {
     class Semantics {
     public:
       Semantics() : label(), count(0) {}
+      Semantics(int num_class)  {
+        label.resize(num_class);
+        for (int i = 0; i < num_class; i++ ) {
+          label[i] = 1.0 / num_class;
+        }
+        count = 1;
+      }
       Semantics(std::vector<float> _label)
         : label(_label), count(1) {}
       std::vector<float> label;
@@ -44,6 +51,10 @@ namespace octomap {
 
   public:
     SemanticOcTreeNode() : OcTreeNode() {}
+    SemanticOcTreeNode(int num_class) : OcTreeNode() {
+      semantics.label.resize(num_class);
+      
+    }
 
     SemanticOcTreeNode(const SemanticOcTreeNode& rhs) : OcTreeNode(rhs), color(rhs.color), semantics(rhs.semantics){}
         
@@ -61,10 +72,10 @@ namespace octomap {
     }
 
     inline Semantics getSemantics() const { return semantics; }
-    inline void setSemantics(Semantics s) {
+    inline void setSemantics(Semantics & s) {
       this->semantics = s;
     }
-    inline void setSemantics(std::vector<float> label) {
+    inline void setSemantics(std::vector<float> & label) {
       this->semantics.label = label;
     }
 
@@ -103,7 +114,13 @@ namespace octomap {
     /// Default constructor, sets resolution of leafs
     SemanticOcTree(double resolution);
     /// Default constructor, sets resolution of leafs
-    SemanticOcTree(double resolution, const std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> & label2color_map);
+    SemanticOcTree(double resolution, int num_classes,
+                   const std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> & label2color_map);
+
+    void addColorMap(const std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> & label2color_map) {
+      label2color = label2color_map;
+
+    }
     
 
     /// virtual constructor: creates a new object of same type
@@ -148,7 +165,7 @@ namespace octomap {
 
     // use provided color map or not
     std::unordered_map<int, std::tuple<uint8_t, uint8_t, uint8_t>> label2color;
-
+    int num_class;
   };
 
   //! user friendly output in format (r g b)
