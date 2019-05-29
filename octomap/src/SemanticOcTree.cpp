@@ -7,12 +7,14 @@ namespace octomap {
   std::ostream& SemanticOcTreeNode::writeData(std::ostream &s) const {
 	s.write((const char*) &value, sizeof(value)); // occupancy
     s.write((const char*) &color, sizeof(Color)); // color
+    s.write((const char *) &semantics, sizeof(Semantics)); // semantics
 	return s;
   }
 
   std::istream& SemanticOcTreeNode::readData(std::istream &s) {
 	s.read((char*) &value, sizeof(value)); // occupancy
 	s.read((char*) &color, sizeof(Color)); // color
+        s.read((char *) &semantics, sizeof(Semantics)); // semantics
 	return s;
   }
 
