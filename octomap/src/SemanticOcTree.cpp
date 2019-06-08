@@ -6,15 +6,27 @@ namespace octomap {
   // node implementation  --------------------------------------
   std::ostream& SemanticOcTreeNode::writeData(std::ostream &s) const {
 	s.write((const char*) &value, sizeof(value)); // occupancy
-    s.write((const char*) &color, sizeof(Color)); // color
-    s.write((const char *) &semantics, sizeof(Semantics)); // semantics
+        s.write((const char*) &color, sizeof(Color)); // color
+        //s.write((const char *)&(semantics.count), sizeof(unsigned int));
+        //size_t sz = semantics.label.size();
+        //s.write(reinterpret_cast<const char*>(&sz), sizeof(sz));
+        //if (sz > 0)
+        //  s.write(reinterpret_cast<const char*>( &semantics.label[0]), sz * sizeof(semantics.label[0] ) ); // semantics
 	return s;
   }
 
   std::istream& SemanticOcTreeNode::readData(std::istream &s) {
 	s.read((char*) &value, sizeof(value)); // occupancy
 	s.read((char*) &color, sizeof(Color)); // color
-        s.read((char *) &semantics, sizeof(Semantics)); // semantics
+        //s.read((char * )&(semantics.count), sizeof(unsigned int));
+        //size_t sz;
+        //s.read((char *)(&sz), sizeof(sz) );
+        //if (sz > 0) {
+        //  semantics.label.resize(sz);
+        //  s.read(reinterpret_cast<char*>(&(semantics.label[0]))   ,
+        //         sizeof(semantics.label[0]  )*sz ); // semantics
+          
+        //}
 	return s;
   }
 
@@ -107,9 +119,10 @@ namespace octomap {
 
         if (child != NULL && child->isSemanticsSet()) {
           std::vector<float> clabel = child->getSemantics().label;
-          if (mlabel.empty())
-            mlabel.reserve(clabel.size());
-          else if (mlabel.size() < clabel.size())
+          //if (mlabel.empty())
+          //  mlabel.resize(clabel.size());
+          //else
+          if (mlabel.size() < clabel.size())
             mlabel.resize(clabel.size());
 
           for (int l=0; l<(int)clabel.size(); l++) {
@@ -121,12 +134,18 @@ namespace octomap {
     }
 
     if (c > 0) {
+      float sums = 0;
       for (int l=0; l<(int)mlabel.size(); l++) {
         mlabel[l] /= c;
+        sums += mlabel[l];
       }
+      // normalize
+      for (auto && d : mlabel) d /= sums;
+      
       return Semantics(mlabel);
     }
     else { // no child had a semantics other than empty
+      
       return Semantics();
     }
   }
@@ -200,8 +219,8 @@ namespace octomap {
         SemanticOcTreeNode::Semantics prev_semantics = n->getSemantics();
         if (prev_semantics.label.size() < label.size()) {
             prev_semantics.label.resize(label.size());
-            for (int i = 0; i < label.size(); i++)
-              prev_semantics.label[i] = 1.0 / label.size();
+            //for (int i = 0; i < label.size(); i++)
+            //  prev_semantics.label[i] = 1.0 / label.size();
             
         }
 
@@ -221,6 +240,7 @@ namespace octomap {
 
       }
       else {
+        // observe this cell the first time
         n->setSemantics(label);
         n->normalizeSemantics();
         n->resetSemanticsCount();
