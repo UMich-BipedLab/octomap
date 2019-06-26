@@ -72,6 +72,19 @@ namespace octomap {
     }
 
     inline Semantics getSemantics() const { return semantics; }
+    
+    inline int getSemanticLabel() const {
+      int label = 0;
+      float max = 0;
+      for (unsigned int c = 0; c < semantics.label.size(); ++c) {
+        if (semantics.label[c] > max) {
+          label = c;
+          max = semantics.label[c];
+        }
+      }
+      return label;
+    }
+    
     inline void setSemantics(Semantics & s) {
       this->semantics = s;
     }
